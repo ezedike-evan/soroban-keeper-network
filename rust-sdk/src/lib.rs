@@ -5,6 +5,7 @@
 
 pub mod client;
 pub mod cross_contract;
+pub mod error;
 pub mod events;
 pub mod network;
 pub mod retry;
@@ -17,6 +18,7 @@ pub use client::{
     RpcTransport, SignedTransaction, SimulationOutcome,
 };
 pub use cross_contract::{CrossContractInvocation, KeeperRegistryCrossContract};
+pub use error::{CallContext, Redacted};
 pub use events::{
     EventDecodeError, FeesSweptEvent, InitializedEvent, KeeperEvent, PausedEvent,
     RewardsWithdrawnEvent, TaskCancelledEvent, TaskClaimedEvent, TaskExecutedEvent,

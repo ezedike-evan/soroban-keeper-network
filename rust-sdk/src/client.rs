@@ -1,5 +1,6 @@
 //! High-level typed client for the Keeper Registry Soroban contract (Issues #333, #334, #340).
 
+use crate::error::CallContext;
 use crate::retry::{default_classify, ErrorClass, RetryPolicy, RpcCallError, TransportError};
 use crate::signing::TransactionSigner;
 pub use crate::types::{BatchTaskParams, PendingCredit, SlashRecord, Task, UnbondRequest};
@@ -36,8 +37,14 @@ impl<'a, S: TransactionSigner> KeeperClient<'a, S> {
         let raw_client = keeper_registry::KeeperRegistryClient::new(self.env, &self.contract_id);
         raw_client
             .try_batch_register_tasks(&self.signer.address(), &tasks, &max_total_reward)
-            .map_err(|e| ClientError::ContractError(alloc_format_error(e)))?
-            .map_err(|e| ClientError::ContractError(alloc_format_error(e)))
+            .map_err(contract_call_err(
+                "batch_register_tasks",
+                crate::call_args![&self.signer.address(), &tasks, &max_total_reward],
+            ))?
+            .map_err(contract_call_err(
+                "batch_register_tasks",
+                crate::call_args![&self.signer.address(), &tasks, &max_total_reward],
+            ))
     }
 
     /// Retrieve full task state for an array of task IDs.
@@ -68,8 +75,14 @@ impl<'a, S: TransactionSigner> KeeperClient<'a, S> {
         let raw_client = keeper_registry::KeeperRegistryClient::new(self.env, &self.contract_id);
         raw_client
             .try_initialize(&self.signer.address(), reward_token, &fee_bps)
-            .map_err(|e| ClientError::ContractError(alloc_format_error(e)))?
-            .map_err(|e| ClientError::ContractError(alloc_format_error(e)))
+            .map_err(contract_call_err(
+                "initialize",
+                crate::call_args![&self.signer.address(), reward_token, &fee_bps],
+            ))?
+            .map_err(contract_call_err(
+                "initialize",
+                crate::call_args![&self.signer.address(), reward_token, &fee_bps],
+            ))
     }
 
     /// Emergency pause toggle.
@@ -77,8 +90,14 @@ impl<'a, S: TransactionSigner> KeeperClient<'a, S> {
         let raw_client = keeper_registry::KeeperRegistryClient::new(self.env, &self.contract_id);
         raw_client
             .try_pause(&self.signer.address())
-            .map_err(|e| ClientError::ContractError(alloc_format_error(e)))?
-            .map_err(|e| ClientError::ContractError(alloc_format_error(e)))
+            .map_err(contract_call_err(
+                "pause",
+                crate::call_args![&self.signer.address()],
+            ))?
+            .map_err(contract_call_err(
+                "pause",
+                crate::call_args![&self.signer.address()],
+            ))
     }
 
     /// Emergency unpause toggle.
@@ -86,8 +105,14 @@ impl<'a, S: TransactionSigner> KeeperClient<'a, S> {
         let raw_client = keeper_registry::KeeperRegistryClient::new(self.env, &self.contract_id);
         raw_client
             .try_unpause(&self.signer.address())
-            .map_err(|e| ClientError::ContractError(alloc_format_error(e)))?
-            .map_err(|e| ClientError::ContractError(alloc_format_error(e)))
+            .map_err(contract_call_err(
+                "unpause",
+                crate::call_args![&self.signer.address()],
+            ))?
+            .map_err(contract_call_err(
+                "unpause",
+                crate::call_args![&self.signer.address()],
+            ))
     }
 
     /// Update platform fee in basis points.
@@ -95,8 +120,14 @@ impl<'a, S: TransactionSigner> KeeperClient<'a, S> {
         let raw_client = keeper_registry::KeeperRegistryClient::new(self.env, &self.contract_id);
         raw_client
             .try_set_fee_bps(&self.signer.address(), &new_fee_bps)
-            .map_err(|e| ClientError::ContractError(alloc_format_error(e)))?
-            .map_err(|e| ClientError::ContractError(alloc_format_error(e)))
+            .map_err(contract_call_err(
+                "set_fee_bps",
+                crate::call_args![&self.signer.address(), &new_fee_bps],
+            ))?
+            .map_err(contract_call_err(
+                "set_fee_bps",
+                crate::call_args![&self.signer.address(), &new_fee_bps],
+            ))
     }
 
     /// Update minimum reward floor.
@@ -104,8 +135,14 @@ impl<'a, S: TransactionSigner> KeeperClient<'a, S> {
         let raw_client = keeper_registry::KeeperRegistryClient::new(self.env, &self.contract_id);
         raw_client
             .try_set_min_reward(&self.signer.address(), &min_reward)
-            .map_err(|e| ClientError::ContractError(alloc_format_error(e)))?
-            .map_err(|e| ClientError::ContractError(alloc_format_error(e)))
+            .map_err(contract_call_err(
+                "set_min_reward",
+                crate::call_args![&self.signer.address(), &min_reward],
+            ))?
+            .map_err(contract_call_err(
+                "set_min_reward",
+                crate::call_args![&self.signer.address(), &min_reward],
+            ))
     }
 
     /// Sweep accrued protocol fees to recipient.
@@ -113,8 +150,14 @@ impl<'a, S: TransactionSigner> KeeperClient<'a, S> {
         let raw_client = keeper_registry::KeeperRegistryClient::new(self.env, &self.contract_id);
         raw_client
             .try_sweep_fees(&self.signer.address(), recipient, &amount)
-            .map_err(|e| ClientError::ContractError(alloc_format_error(e)))?
-            .map_err(|e| ClientError::ContractError(alloc_format_error(e)))
+            .map_err(contract_call_err(
+                "sweep_fees",
+                crate::call_args![&self.signer.address(), recipient, &amount],
+            ))?
+            .map_err(contract_call_err(
+                "sweep_fees",
+                crate::call_args![&self.signer.address(), recipient, &amount],
+            ))
     }
 
     // ── Issue #428: Staking & Slashing Entry Points (epic E06) ───────────────
@@ -136,8 +179,14 @@ impl<'a, S: TransactionSigner> KeeperClient<'a, S> {
         let raw_client = keeper_registry::KeeperRegistryClient::new(self.env, &self.contract_id);
         raw_client
             .try_stake_deposit(&self.signer.address(), &amount)
-            .map_err(|e| ClientError::ContractError(alloc_format_error(e)))?
-            .map_err(|e| ClientError::ContractError(alloc_format_error(e)))
+            .map_err(contract_call_err(
+                "stake_deposit",
+                crate::call_args![&self.signer.address(), &amount],
+            ))?
+            .map_err(contract_call_err(
+                "stake_deposit",
+                crate::call_args![&self.signer.address(), &amount],
+            ))
     }
 
     /// Starts the unbonding delay for `amount` of the signer's bonded stake.
@@ -147,8 +196,14 @@ impl<'a, S: TransactionSigner> KeeperClient<'a, S> {
         let raw_client = keeper_registry::KeeperRegistryClient::new(self.env, &self.contract_id);
         raw_client
             .try_initiate_unbond(&self.signer.address(), &amount)
-            .map_err(|e| ClientError::ContractError(alloc_format_error(e)))?
-            .map_err(|e| ClientError::ContractError(alloc_format_error(e)))
+            .map_err(contract_call_err(
+                "initiate_unbond",
+                crate::call_args![&self.signer.address(), &amount],
+            ))?
+            .map_err(contract_call_err(
+                "initiate_unbond",
+                crate::call_args![&self.signer.address(), &amount],
+            ))
     }
 
     /// Releases the signer's pending unbond request once its delay has
@@ -158,8 +213,14 @@ impl<'a, S: TransactionSigner> KeeperClient<'a, S> {
         let raw_client = keeper_registry::KeeperRegistryClient::new(self.env, &self.contract_id);
         raw_client
             .try_withdraw_stake(&self.signer.address())
-            .map_err(|e| ClientError::ContractError(alloc_format_error(e)))?
-            .map_err(|e| ClientError::ContractError(alloc_format_error(e)))
+            .map_err(contract_call_err(
+                "withdraw_stake",
+                crate::call_args![&self.signer.address()],
+            ))?
+            .map_err(contract_call_err(
+                "withdraw_stake",
+                crate::call_args![&self.signer.address()],
+            ))
     }
 
     /// Admin-only: slashes `amount` of `keeper`'s bonded stake for
@@ -175,8 +236,14 @@ impl<'a, S: TransactionSigner> KeeperClient<'a, S> {
         let raw_client = keeper_registry::KeeperRegistryClient::new(self.env, &self.contract_id);
         raw_client
             .try_slash(&self.signer.address(), keeper, &amount, &reason, treasury)
-            .map_err(|e| ClientError::ContractError(alloc_format_error(e)))?
-            .map_err(|e| ClientError::ContractError(alloc_format_error(e)))
+            .map_err(contract_call_err(
+                "slash",
+                crate::call_args![&self.signer.address(), keeper, &amount, &reason, treasury],
+            ))?
+            .map_err(contract_call_err(
+                "slash",
+                crate::call_args![&self.signer.address(), keeper, &amount, &reason, treasury],
+            ))
     }
 
     /// Raises the signer's own appeal against a slash it was subject to.
@@ -185,8 +252,14 @@ impl<'a, S: TransactionSigner> KeeperClient<'a, S> {
         let raw_client = keeper_registry::KeeperRegistryClient::new(self.env, &self.contract_id);
         raw_client
             .try_raise_slash_appeal(&self.signer.address(), &slash_id)
-            .map_err(|e| ClientError::ContractError(alloc_format_error(e)))?
-            .map_err(|e| ClientError::ContractError(alloc_format_error(e)))
+            .map_err(contract_call_err(
+                "raise_slash_appeal",
+                crate::call_args![&self.signer.address(), &slash_id],
+            ))?
+            .map_err(contract_call_err(
+                "raise_slash_appeal",
+                crate::call_args![&self.signer.address(), &slash_id],
+            ))
     }
 
     /// Admin-only: resolves a raised slash appeal, either upholding it
@@ -200,8 +273,14 @@ impl<'a, S: TransactionSigner> KeeperClient<'a, S> {
         let raw_client = keeper_registry::KeeperRegistryClient::new(self.env, &self.contract_id);
         raw_client
             .try_resolve_slash_appeal(&self.signer.address(), &slash_id, &uphold_appeal)
-            .map_err(|e| ClientError::ContractError(alloc_format_error(e)))?
-            .map_err(|e| ClientError::ContractError(alloc_format_error(e)))
+            .map_err(contract_call_err(
+                "resolve_slash_appeal",
+                crate::call_args![&self.signer.address(), &slash_id, &uphold_appeal],
+            ))?
+            .map_err(contract_call_err(
+                "resolve_slash_appeal",
+                crate::call_args![&self.signer.address(), &slash_id, &uphold_appeal],
+            ))
     }
 
     /// Admin-only: sets the minimum bonded stake `claim_task` requires (`0`
@@ -210,8 +289,14 @@ impl<'a, S: TransactionSigner> KeeperClient<'a, S> {
         let raw_client = keeper_registry::KeeperRegistryClient::new(self.env, &self.contract_id);
         raw_client
             .try_set_min_stake(&self.signer.address(), &min_stake)
-            .map_err(|e| ClientError::ContractError(alloc_format_error(e)))?
-            .map_err(|e| ClientError::ContractError(alloc_format_error(e)))
+            .map_err(contract_call_err(
+                "set_min_stake",
+                crate::call_args![&self.signer.address(), &min_stake],
+            ))?
+            .map_err(contract_call_err(
+                "set_min_stake",
+                crate::call_args![&self.signer.address(), &min_stake],
+            ))
     }
 
     /// Admin-only: sets the ledger hold `execute_task` credits sit in
@@ -222,8 +307,14 @@ impl<'a, S: TransactionSigner> KeeperClient<'a, S> {
         let raw_client = keeper_registry::KeeperRegistryClient::new(self.env, &self.contract_id);
         raw_client
             .try_set_dispute_window(&self.signer.address(), &ledgers)
-            .map_err(|e| ClientError::ContractError(alloc_format_error(e)))?
-            .map_err(|e| ClientError::ContractError(alloc_format_error(e)))
+            .map_err(contract_call_err(
+                "set_dispute_window",
+                crate::call_args![&self.signer.address(), &ledgers],
+            ))?
+            .map_err(contract_call_err(
+                "set_dispute_window",
+                crate::call_args![&self.signer.address(), &ledgers],
+            ))
     }
 
     /// Disputes a task's still-pending execution credit. Only the task's
@@ -232,8 +323,14 @@ impl<'a, S: TransactionSigner> KeeperClient<'a, S> {
         let raw_client = keeper_registry::KeeperRegistryClient::new(self.env, &self.contract_id);
         raw_client
             .try_dispute_execution(&self.signer.address(), &task_id)
-            .map_err(|e| ClientError::ContractError(alloc_format_error(e)))?
-            .map_err(|e| ClientError::ContractError(alloc_format_error(e)))
+            .map_err(contract_call_err(
+                "dispute_execution",
+                crate::call_args![&self.signer.address(), &task_id],
+            ))?
+            .map_err(contract_call_err(
+                "dispute_execution",
+                crate::call_args![&self.signer.address(), &task_id],
+            ))
     }
 
     /// Admin-only: resolves a disputed execution credit, either upholding
@@ -247,8 +344,14 @@ impl<'a, S: TransactionSigner> KeeperClient<'a, S> {
         let raw_client = keeper_registry::KeeperRegistryClient::new(self.env, &self.contract_id);
         raw_client
             .try_resolve_execution_dispute(&self.signer.address(), &task_id, &uphold_dispute)
-            .map_err(|e| ClientError::ContractError(alloc_format_error(e)))?
-            .map_err(|e| ClientError::ContractError(alloc_format_error(e)))
+            .map_err(contract_call_err(
+                "resolve_execution_dispute",
+                crate::call_args![&self.signer.address(), &task_id, &uphold_dispute],
+            ))?
+            .map_err(contract_call_err(
+                "resolve_execution_dispute",
+                crate::call_args![&self.signer.address(), &task_id, &uphold_dispute],
+            ))
     }
 
     // ── Issue #428 / backlog 0297: staking read-only views ───────────────────
@@ -305,10 +408,63 @@ pub enum ClientError {
     ContractError(String),
     #[error("Signer error: {0}")]
     SigningFailed(#[from] crate::signing::SignerError),
+    /// Any of the above, wrapped with which call produced it (issue #345).
+    #[error("{context}: {source}")]
+    InCall {
+        context: CallContext,
+        #[source]
+        source: Box<ClientError>,
+    },
+}
+
+impl ClientError {
+    /// Attach a call context, once: a context already attached wins, so
+    /// plumbing shared between methods cannot stack a second frame.
+    fn in_call(self, context: CallContext) -> Self {
+        match self {
+            Self::InCall { .. } => self,
+            other => Self::InCall {
+                context,
+                source: Box::new(other),
+            },
+        }
+    }
+
+    /// The underlying error, with any call context unwrapped — match on
+    /// this where the variant matters more than the call site.
+    pub fn root(&self) -> &ClientError {
+        match self {
+            Self::InCall { source, .. } => source.root(),
+            other => other,
+        }
+    }
+
+    /// The failing call, when context was attached.
+    pub fn context(&self) -> Option<&CallContext> {
+        match self {
+            Self::InCall { context, .. } => Some(context),
+            _ => None,
+        }
+    }
 }
 
 fn alloc_format_error<E: core::fmt::Debug>(err: E) -> String {
     format!("{err:?}")
+}
+
+/// `map_err` closure attaching both the decoded contract error and the call
+/// context (issue #345). Built before the call so the argument debug forms
+/// are captured exactly as passed; the signer itself is configuration, not
+/// an argument, and is never formatted (only its public address is, where a
+/// method passes it to the contract).
+fn contract_call_err<E: core::fmt::Debug>(
+    method: &'static str,
+    args: std::vec::Vec<String>,
+) -> impl Fn(E) -> ClientError {
+    move |e| {
+        ClientError::ContractError(alloc_format_error(e))
+            .in_call(CallContext::new(method, args.clone()))
+    }
 }
 
 // ── Issue #267: RPC-backed KeeperRegistryClient ──────────────────────────────
@@ -400,6 +556,46 @@ pub enum RegistryClientError {
     NoSigner,
     #[error("signing failed: {0}")]
     Signing(#[from] crate::signing::SignerError),
+    /// Any of the above, wrapped with which call produced it (issue #345).
+    /// `read` and `write` attach it, so every typed method - and any direct
+    /// `read`/`write` caller - gets it for free.
+    #[error("{context}: {source}")]
+    InCall {
+        context: CallContext,
+        #[source]
+        source: Box<RegistryClientError>,
+    },
+}
+
+impl RegistryClientError {
+    /// Attach a call context, once: the innermost attachment (the method
+    /// that actually ran) wins over any outer plumbing.
+    fn in_call(self, context: CallContext) -> Self {
+        match self {
+            Self::InCall { .. } => self,
+            other => Self::InCall {
+                context,
+                source: Box::new(other),
+            },
+        }
+    }
+
+    /// The underlying error, with any call context unwrapped - match on
+    /// this where the variant matters more than the call site.
+    pub fn root(&self) -> &RegistryClientError {
+        match self {
+            Self::InCall { source, .. } => source.root(),
+            other => other,
+        }
+    }
+
+    /// The failing call, when context was attached.
+    pub fn context(&self) -> Option<&CallContext> {
+        match self {
+            Self::InCall { context, .. } => Some(context),
+            _ => None,
+        }
+    }
 }
 
 impl From<RpcCallError<u32>> for RegistryClientError {
@@ -516,31 +712,47 @@ impl<T: RpcTransport> KeeperRegistryClient<T> {
     /// Shared read plumbing: simulate only, decode the return value.
     pub async fn read<R: TryFromVal<Env, Val>>(
         &self,
-        function: &str,
+        function: &'static str,
         args: std::vec::Vec<ScVal>,
     ) -> Result<R, RegistryClientError> {
-        let outcome = self.simulate(&self.request(function, args)).await?;
-        self.decode(&outcome.return_value)
+        // Captured before the call, so the error names exactly what was sent
+        // (issue #345). `ScVal` arguments never include the signer or any
+        // other key material, so their debug form is safe to keep.
+        let context = CallContext::from_debug(function, &args);
+        let result: Result<R, RegistryClientError> = async {
+            let outcome = self.simulate(&self.request(function, args)).await?;
+            self.decode(&outcome.return_value)
+        }
+        .await;
+        result.map_err(|e| e.in_call(context))
     }
 
     /// Shared mutating plumbing: simulate, sign the assembled transaction
     /// with the configured signer, submit, decode the result.
     pub async fn write<R: TryFromVal<Env, Val>>(
         &self,
-        function: &str,
+        function: &'static str,
         args: std::vec::Vec<ScVal>,
     ) -> Result<R, RegistryClientError> {
-        let signer = self.signer.as_ref().ok_or(RegistryClientError::NoSigner)?;
-        let request = self.request(function, args);
-        let outcome = self.simulate(&request).await?;
-        let signature = signer.sign_payload(&outcome.transaction)?;
-        let signed = SignedTransaction {
-            request,
-            transaction: outcome.transaction,
-            signature: signature.iter().collect(),
-        };
-        let result = self.transport.submit(&signed).await?;
-        self.decode(&result)
+        // Captured before the call (issue #345). Only the contract arguments
+        // are recorded: the signer is configuration, and a signing failure's
+        // context names the call without ever formatting the signer itself.
+        let context = CallContext::from_debug(function, &args);
+        let result: Result<R, RegistryClientError> = async {
+            let signer = self.signer.as_ref().ok_or(RegistryClientError::NoSigner)?;
+            let request = self.request(function, args);
+            let outcome = self.simulate(&request).await?;
+            let signature = signer.sign_payload(&outcome.transaction)?;
+            let signed = SignedTransaction {
+                request,
+                transaction: outcome.transaction,
+                signature: signature.iter().collect(),
+            };
+            let result = self.transport.submit(&signed).await?;
+            self.decode(&result)
+        }
+        .await;
+        result.map_err(|e| e.in_call(context))
     }
 
     fn signer_arg(&self) -> Result<ScVal, RegistryClientError> {
@@ -568,7 +780,9 @@ impl<T: RpcTransport> KeeperRegistryClient<T> {
 
     /// Admin-only: updates the platform fee. Signed by the configured signer.
     pub async fn set_fee_bps(&self, new_bps: u32) -> Result<(), RegistryClientError> {
-        let admin = self.signer_arg()?;
+        let admin = self
+            .signer_arg()
+            .map_err(|e| e.in_call(CallContext::new("set_fee_bps", crate::call_args![new_bps])))?;
         self.write("set_fee_bps", vec![admin, ScVal::U32(new_bps)])
             .await
     }

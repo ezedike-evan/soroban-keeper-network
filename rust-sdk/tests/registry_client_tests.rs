@@ -148,14 +148,24 @@ async fn contract_errors_decode_into_keeper_error_and_are_not_retried() {
 
     // fee_bps above 10_000 is rejected by the contract itself.
     let err = c.set_fee_bps(10_001).await.unwrap_err();
+    // Since issue #345 every error arrives wrapped in its call context;
+    // `root()` is the variant the caller acts on, the context is the call.
     assert!(matches!(
-        err,
+        err.root(),
         RegistryClientError::Contract(KeeperError::InvalidFeeBps)
     ));
+    assert_eq!(
+        err.context().expect("context attached").method,
+        "set_fee_bps"
+    );
 
     // Unknown task: reads surface the contract error too, after one simulate.
     let before = c.get_task(999).await.unwrap_err();
-    assert!(matches!(before, RegistryClientError::Contract(_)));
+    assert!(matches!(before.root(), RegistryClientError::Contract(_)));
+    assert_eq!(
+        before.context().expect("context attached").method,
+        "get_task"
+    );
 }
 
 #[tokio::test]
@@ -167,7 +177,7 @@ async fn transient_simulation_failures_are_retried() {
     let c = client(&f, 5);
     let err = c.get_fee_bps().await.unwrap_err();
     assert!(matches!(
-        err,
+        err.root(),
         RegistryClientError::Transport(TransportError::Timeout)
     ));
 }
@@ -184,7 +194,7 @@ async fn write_without_signer_fails_before_any_rpc() {
     };
     let c = KeeperRegistryClient::new("C", "url", "pass", transport);
     assert!(matches!(
-        c.set_fee_bps(1).await.unwrap_err(),
+        c.set_fee_bps(1).await.unwrap_err().root(),
         RegistryClientError::NoSigner
     ));
 }

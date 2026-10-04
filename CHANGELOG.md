@@ -6,6 +6,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — rust-sdk call context on every error (0345)
+
+- Every error `KeeperClient` and `KeeperRegistryClient` return now carries
+  the failing method's name and a debug representation of its non-secret
+  arguments (`rust-sdk/src/error.rs`'s `CallContext`), so a caller's log is
+  self-explanatory without separately logging the call site. The context is
+  attached once at the `read`/`write` chokepoints (RPC client) and per
+  method (Env client); `.root()` unwraps to the underlying variant and
+  `.context()` exposes the call.
+- Secret hygiene: only contract arguments are ever formatted — the signer
+  is configuration, not an argument. New `Redacted<T>` wrapper prints
+  `<redacted>` from both `Debug` and `Display` for key material held inside
+  signer implementations, and a test triggers a signing failure from a
+  seed-holding signer and asserts the seed's bytes appear nowhere in the
+  formatted error chain, in decimal, hex, or byte-literal form.
+
+
 ### Added — treasury contract initial release (E08)
 
 - The treasury contract is introduced with its own `VERSION` constant starting at 1.
